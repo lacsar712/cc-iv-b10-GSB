@@ -7,6 +7,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from db import DSN, SCHEMA, connect
+from break_policy import refresh_lamp
 from rules import judge
 
 
@@ -36,10 +37,20 @@ def claim_id(conn, scan_id: int | None) -> bool:
     return True
 
 
+def refresh_lamp_safely(conn):
+    """办结后顺手重走灯链路；灯是提示，绝不能挡住认领与办结。"""
+    try:
+        refresh_lamp(conn)
+    except Exception as exc:  # pragma: no cover
+        print(f"break lamp refresh error: {exc}", flush=True)
+
+
 def drain(conn) -> bool:
     any_row = False
     while claim_id(conn, None):
         any_row = True
+    if any_row:
+        refresh_lamp_safely(conn)
     return any_row
 
 
@@ -63,7 +74,8 @@ def listen_loop():
                 for note in conn.notifies():
                     with connect() as work:
                         if note is not None:
-                            claim_id(work, int(note.payload))
+                            if claim_id(work, int(note.payload)):
+                                refresh_lamp_safely(work)
                         drain(work)
                         work.commit()
         except Exception as exc:
