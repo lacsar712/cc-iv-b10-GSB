@@ -7,6 +7,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from db import DSN, SCHEMA, connect
+from lamp import evaluate
 from rules import judge
 
 
@@ -48,7 +49,8 @@ def poll_loop():
         try:
             with connect() as conn:
                 conn.execute(SCHEMA)
-                drain(conn)
+                evaluate(conn)  # 时钟 → 亮灯
+                drain(conn)  # → 写入通道；灯只做提示，认领永不看灯
                 conn.commit()
         except Exception as exc:
             print(f"poll error: {exc}", flush=True)

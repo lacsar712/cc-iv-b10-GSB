@@ -33,4 +33,31 @@ DROP TRIGGER IF EXISTS trg_iv_scan_notify ON iv_scans;
 CREATE TRIGGER trg_iv_scan_notify
 AFTER INSERT ON iv_scans
 FOR EACH ROW EXECUTE FUNCTION notify_iv_scan();
+
+CREATE TABLE IF NOT EXISTS lunch_lamp_config (
+    id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    start_minutes integer NOT NULL,
+    end_minutes integer NOT NULL,
+    min_done integer NOT NULL,
+    window_minutes integer NOT NULL,
+    updated_by text,
+    updated_at timestamptz
+);
+CREATE TABLE IF NOT EXISTS lunch_lamp_state (
+    id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    lit boolean NOT NULL DEFAULT false,
+    evaluated_at timestamptz
+);
+CREATE TABLE IF NOT EXISTS lunch_lamp_events (
+    id serial PRIMARY KEY,
+    event text NOT NULL,
+    done_count integer NOT NULL,
+    in_window boolean NOT NULL,
+    at timestamptz NOT NULL
+);
+INSERT INTO lunch_lamp_config (id, start_minutes, end_minutes, min_done, window_minutes)
+VALUES (1, 690, 780, 3, 30)
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO lunch_lamp_state (id, lit) VALUES (1, false)
+ON CONFLICT (id) DO NOTHING;
 """
